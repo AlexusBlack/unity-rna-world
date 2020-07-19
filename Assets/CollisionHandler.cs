@@ -13,8 +13,12 @@ public class CollisionHandler : MonoBehaviour
   private Rigidbody2D rb2d;
   private EnergyConservationWatchDog ecwd;
   
+  public FixedJoint2D fj2d; 
+  
   // Record of last magnitude
   public float lastMagnitude = 0;
+  public int electrons = 1;
+  public int electronsToShare = 1;
 
   // Start is called before the first frame update
   void Start()
@@ -49,6 +53,33 @@ public class CollisionHandler : MonoBehaviour
     return tke;
   }
 
+  void OnCollisionEnter2D(Collision2D col) {
+    // If we don't have bond
+    if(fj2d == null && 
+       // And velocity above the threshold
+       col.relativeVelocity.magnitude > ecwd.bondMagnitudeThreshold) {
+      // check if other side have a bond
+      var ch = col.gameObject.GetComponent<CollisionHandler>();
+      if(ch == null) return; // hit the wall
+      if(ch.fj2d != null) return;
+
+      // Creating bond to it
+      fj2d = gameObject.AddComponent<FixedJoint2D>();
+      fj2d.connectedBody = col.rigidbody;
+      fj2d.breakForce = ecwd.bondStrength;
+
+      // setting the bond to other side
+      ch.fj2d = fj2d;
+    }
+
+  }
+
+  void OnJointBreak2D(Joint2D brokenJoint) {
+    Debug.Log("Joint broken");
+    // Destroying other side of the bond
+    // Destroy(brokenJoint.connectedBody.GetComponent<FixedJoint2D>());
+
+  }
   // Update is called once per frame
   // void FixedUpdate()
   // {
